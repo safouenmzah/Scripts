@@ -30,36 +30,31 @@ function install() {
 		echo "Installation failed. Terminating." && exit 1
 	fi
 
-	echo "Starting services..."
-	/usr/share/prizm/scripts/pccis.sh start
-
-	echo "Starting PAS..."
-	/usr/share/prizm/pas/pm2/pas.sh start
-
 	echo "Successfully installed."
 
 	if [[ $INCLUDE_PHP ]]; then
-    	apt-get install -y php5 libapache2-mod-php5 &> /dev/null
+		echo "Installing php5..."
+		apt-get install -y php5 libapache2-mod-php5
 
-    	sed -i "176iAlias /pccis_sample /usr/share/prizm/Samples/php\n<Directory /usr/share/prizm/Samples/php>\n\tAllowOverride All\n\tRequire all granted\n</Directory>" /etc/apache2/apache2.conf
+		sed -i "176iAlias /pccis_sample /usr/share/prizm/Samples/php\n<Directory /usr/share/prizm/Samples/php>\n\tAllowOverride All\n\tRequire all granted\n</Directory>" /etc/apache2/apache2.conf
+	    
+	    echo "Restarting apache2..."
+		apachectl restart
 	fi
 
 	if [[ $INCLUDE_JSP ]]; then
 		echo "Installing java..."
-		apt-get install default-jre
+		apt-get install -y default-jre
 
 		echo "Installing tomcat..."
-		apt-get install tomcat7
+		apt-get install -y tomcat7
 
 		echo "Deploying PCCSample.war..."
 		cp /usr/share/prizm/Samples/jsp/target/PCCSample.war /usr/share/tomcat/webapps/
 
 		echo "Restarting tomcat..."
-		service tomcat8 restart
+		service tomcat7 restart
 	fi
-
-    echo "Restarting apache2..."
-	apachectl restart
 
 	echo "Restarting services..."
 	/usr/share/prizm/scripts/pccis.sh restart
