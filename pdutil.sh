@@ -48,6 +48,47 @@ function install() {
 	firefox "localhost:18681/admin" "http://localhost:18681/PCCIS/V1/Static/Viewer/Test" &> /dev/null &
 
 	echo "Successfully installed."
+
+	if [[ $INCLUDE_PHP ]]; then
+    	apt-get install -y php5 libapache2-mod-php5 &> /dev/null
+
+    	sed -i "176iAlias /pccis_sample /usr/share/prizm/Samples/php\n<Directory /usr/share/prizm/Samples/php>\n\tAllowOverride All\n\tRequire all granted\n</Directory>" /etc/apache2/apache2.conf
+
+    	echo "Restarting apache2..."
+    	apachectl restart
+
+    	echo "Restarting services..."
+    	/usr/share/prizm/scripts/pccis.sh restart
+
+    	echo "Restarting PAS..."
+    	/usr/share/prizm/pas/pm2/pas.sh restart
+
+		echo "Restarting samples..."
+    	/usr/share/prizm/scripts/demos.sh restart
+	fi
+
+	if [[ $INCLUDE_JSP ]]; then
+		echo "Installing java..."
+		apt-get install default-jre
+
+		echo "Installing tomcat..."
+		apt-get install tomcat
+
+		echo "Deploying PCCSample.war..."
+		cp /usr/share/prizm/Samples/jsp/target/PCCSample.war /usr/share/tomcat/webapps/
+
+		echo "Restarting tomcat..."
+		services tomcat restart
+
+    	echo "Restarting services..."
+    	/usr/share/prizm/scripts/pccis.sh restart
+
+    	echo "Restarting PAS..."
+    	/usr/share/prizm/pas/pm2/pas.sh restart
+
+		echo "Restarting samples..."
+    	/usr/share/prizm/scripts/demos.sh restart
+	fi
 }
 
 # ./pdutil.sh remove
@@ -56,7 +97,7 @@ function remove() {
 
   		# Prompt for confirmation
 		read -rp "Prior installation detected. Remove? [y/N] " RESPONSE
-		if [[ $RESPONSE == "^([yY][eE][sS] | [yY])$" ]]; then
+		if [[ "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
         	echo "Terminating."
         	exit 1
 		fi
@@ -112,7 +153,7 @@ function license() {
 function clearlogs() {
 	# Prompt for confirmation
 	read -rp "Clear logs? [y/N] " RESPONSE
-	if [[ $RESPONSE == "^([yY][eE][sS] | [yY])$" ]]; then
+	if [[ "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
     	echo "Terminating."
     	exit 1
 	fi
@@ -142,11 +183,32 @@ function main() {
     	exit 1
 	fi
 
+	# Save current working directory
 	CWD=$(pwd)
+
+	INCLUDE_PHP=false
+	INCLUDE_JSP=false
 
 	case $1 in
 	"install")
-		install "$2"
+		for TOKEN in "${@:2}"; do
+			case $TOKEN in
+			"--include-php")
+				INCLUDE_PHP=true
+				;;
+			"--include-jsp")
+				INCLUDE_JSP=true
+				;;
+			*)
+				read -rp "Token \`$TOKEN\` unrecognized. Continue? [y/N] " RESPONSE
+				if [[ ! "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
+		        	echo "Terminating."
+		        	exit 1
+				fi
+			esac
+		done
+
+		install
 		;;
 	"remove")
 		remove
@@ -161,13 +223,14 @@ function main() {
 		clearlogs
 		;;
 	*)
-		echo "Usage: ./pdutil.sh (install|remove|download|license|clearlogs)"
+		echo "Usage: ./pdutil.sh (install|remove|download|license|clearlogs) [--include-php]"
 		;;
 	esac
 
+	# Restore current working directory
 	cd "$CWD" || (echo "Directory change failed. Terminating" && exit 1)
 
 	exit 0
 }
 
-main "$1"
+main "$@"
