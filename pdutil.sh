@@ -4,8 +4,7 @@
 function install() {
 	# Check architecture
 	if [[ "$(uname -m)" != "x86_64" ]]; then
-        echo "Incompatible architecture. Terminating."
-        exit 1
+        echo "Incompatible architecture. Terminating." && exit 1
     fi
 
 	# Enter temporary directory
@@ -19,8 +18,7 @@ function install() {
 
 	echo "Extracting archives..."
 	if [[ ! "$(find . -name "*.tar.gz" -exec tar -xzvf {} \;)" ]]; then 
-		echo "Extraction failed. Terminating."
-		exit 1
+		echo "Extraction failed. Terminating." && exit 1
 	fi
 
 	echo "Resolving dependencies..."
@@ -29,8 +27,7 @@ function install() {
 
 	echo "Installing PrizmDoc..."
 	if [[ ! "$(apt-get -fy install)" ]]; then
-		echo "Installation failed. Terminating."
-		exit 1
+		echo "Installation failed. Terminating." && exit 1
 	fi
 
 	echo "Starting services..."
@@ -39,32 +36,12 @@ function install() {
 	echo "Starting PAS..."
 	/usr/share/prizm/pas/pm2/pas.sh start
 
-	echo "Restarting apache2..."
-	if [[ ! "$(apachectl restart &> /dev/null)" ]]; then
-		service apache2 restart
-	fi
-
-	echo "Starting samples..."
-	firefox "localhost:18681/admin" "http://localhost:18681/PCCIS/V1/Static/Viewer/Test" &> /dev/null &
-
 	echo "Successfully installed."
 
 	if [[ $INCLUDE_PHP ]]; then
     	apt-get install -y php5 libapache2-mod-php5 &> /dev/null
 
     	sed -i "176iAlias /pccis_sample /usr/share/prizm/Samples/php\n<Directory /usr/share/prizm/Samples/php>\n\tAllowOverride All\n\tRequire all granted\n</Directory>" /etc/apache2/apache2.conf
-
-    	echo "Restarting apache2..."
-    	apachectl restart
-
-    	echo "Restarting services..."
-    	/usr/share/prizm/scripts/pccis.sh restart
-
-    	echo "Restarting PAS..."
-    	/usr/share/prizm/pas/pm2/pas.sh restart
-
-		echo "Restarting samples..."
-    	/usr/share/prizm/scripts/demos.sh restart
 	fi
 
 	if [[ $INCLUDE_JSP ]]; then
@@ -72,22 +49,36 @@ function install() {
 		apt-get install default-jre
 
 		echo "Installing tomcat..."
-		apt-get install tomcat
+		apt-get install tomcat7
 
 		echo "Deploying PCCSample.war..."
 		cp /usr/share/prizm/Samples/jsp/target/PCCSample.war /usr/share/tomcat/webapps/
 
 		echo "Restarting tomcat..."
-		services tomcat restart
+		service tomcat8 restart
+	fi
 
-    	echo "Restarting services..."
-    	/usr/share/prizm/scripts/pccis.sh restart
+    echo "Restarting apache2..."
+	apachectl restart
 
-    	echo "Restarting PAS..."
-    	/usr/share/prizm/pas/pm2/pas.sh restart
+	echo "Restarting services..."
+	/usr/share/prizm/scripts/pccis.sh restart
 
-		echo "Restarting samples..."
-    	/usr/share/prizm/scripts/demos.sh restart
+	echo "Restarting PAS..."
+	/usr/share/prizm/pas/pm2/pas.sh restart
+
+	echo "Restarting samples..."
+	/usr/share/prizm/scripts/demos.sh restart
+
+	echo "Starting samples..."
+	firefox "localhost:18681/admin" "http://localhost:18681/PCCIS/V1/Static/Viewer/Test" &> /dev/null &
+
+	if [[ $INCLUDE_PHP ]]; then
+		firefox "localhost/pccis_sample/splash" &> /dev/null &
+	fi
+
+	if [[ $INCLUDE_JSP ]]; then
+		firefox "localhost:8080/PCCSample" &> /dev/null &
 	fi
 }
 
@@ -98,8 +89,7 @@ function remove() {
   		# Prompt for confirmation
 		read -rp "Prior installation detected. Remove? [y/N] " RESPONSE
 		if [[ "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
-        	echo "Terminating."
-        	exit 1
+        	echo "Terminating." && exit 1
 		fi
 
   		echo "Stopping services..."
@@ -141,8 +131,7 @@ function license() {
 
 		echo "Licencing..."
 		if [ ! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar deploy write "$SOLUTION_NAME" "$OEM_KEY")" ]; then
-			echo "Licensing failed. Terminating."
-			exit 1
+			echo "Licensing failed. Terminating." && exit 1
 		fi
 	else
 		echo "PrizmDoc is not installed. Terminating."
@@ -154,8 +143,7 @@ function clearlogs() {
 	# Prompt for confirmation
 	read -rp "Clear logs? [y/N] " RESPONSE
 	if [[ "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
-    	echo "Terminating."
-    	exit 1
+    	echo "Terminating." && exit 1
 	fi
 
 	echo "Stopping services..."
@@ -179,8 +167,7 @@ function main() {
 
 	# Check privilages
 	if [ "$(/usr/bin/id -u)" != 0 ]; then
-    	echo "Insufficient privilages. Terminating."
-    	exit 1
+    	echo "Insufficient privilages. Terminating." && exit 1
 	fi
 
 	# Save current working directory
@@ -202,8 +189,7 @@ function main() {
 			*)
 				read -rp "Token \`$TOKEN\` unrecognized. Continue? [y/N] " RESPONSE
 				if [[ ! "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
-		        	echo "Terminating."
-		        	exit 1
+		        	echo "Terminating." && exit 1
 				fi
 			esac
 		done
