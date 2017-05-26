@@ -4,14 +4,14 @@
 function install() {
 	# Check architecture
 	if [[ "$(uname -m)" != "x86_64" ]]; then
-        echo "Incompatible architecture. Terminating." && exit 1
-    fi
+		echo "Incompatible architecture. Terminating." && exit 1
+	fi
 
 	# Enter temporary directory
 	cd "$(mktemp -d)" || (echo "Directory change failed. Terminating" && exit 1)
 
 	# Download
-    download
+	download
 	
 	# Install Apache
 	apt-get install -y apache2 &> /dev/null
@@ -37,8 +37,8 @@ function install() {
 		apt-get install -y php5 libapache2-mod-php5
 
 		sed -i "176iAlias /pccis_sample /usr/share/prizm/Samples/php\n<Directory /usr/share/prizm/Samples/php>\n\tAllowOverride All\n\tRequire all granted\n</Directory>" /etc/apache2/apache2.conf
-	    
-	    echo "Restarting apache2..."
+		
+		echo "Restarting apache2..."
 		apachectl restart
 	fi
 
@@ -46,11 +46,11 @@ function install() {
 		echo "Installing java..."
 		apt-get install -y default-jre
 
-		echo "Installing tomcat..."
+		echo "Installing tomcat7..."
 		apt-get install -y tomcat7
 
 		echo "Deploying PCCSample.war..."
-		cp /usr/share/prizm/Samples/jsp/target/PCCSample.war /usr/share/tomcat/webapps/
+		cp /usr/share/prizm/Samples/jsp/target/PCCSample.war /var/lib/tomcat7/webapps/
 
 		echo "Restarting tomcat..."
 		service tomcat7 restart
@@ -81,20 +81,20 @@ function install() {
 function remove() {
 	if [[ -d "/usr/share/prizm" ]]; then
 
-  		# Prompt for confirmation
+		# Prompt for confirmation
 		read -rp "Prior installation detected. Remove? [y/N] " RESPONSE
 		if [[ "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
-        	echo "Terminating." && exit 1
+			echo "Terminating." && exit 1
 		fi
 
-  		echo "Stopping services..."
-  		/usr/share/prizm/scripts/pccis.sh stop
+		echo "Stopping services..."
+		/usr/share/prizm/scripts/pccis.sh stop
 
-  		echo "Removing dependencies..."
-  		apt-get -fy remove prizm-services.* &> /dev/null
+		echo "Removing dependencies..."
+		apt-get -fy remove prizm-services.* &> /dev/null
 
-  		echo "Removing remaining files..."
-  		rm -rf /usr/share/prizm
+		echo "Removing remaining files..."
+		rm -rf /usr/share/prizm
 
 		echo "Successfully removed."
 	else
@@ -138,7 +138,7 @@ function clearlogs() {
 	# Prompt for confirmation
 	read -rp "Clear logs? [y/N] " RESPONSE
 	if [[ "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
-    	echo "Terminating." && exit 1
+		echo "Terminating." && exit 1
 	fi
 
 	echo "Stopping services..."
@@ -162,7 +162,7 @@ function main() {
 
 	# Check privilages
 	if [ "$(/usr/bin/id -u)" != 0 ]; then
-    	echo "Insufficient privilages. Terminating." && exit 1
+		echo "Insufficient privilages. Terminating." && exit 1
 	fi
 
 	# Save current working directory
@@ -184,7 +184,7 @@ function main() {
 			*)
 				read -rp "Token \`$TOKEN\` unrecognized. Continue? [y/N] " RESPONSE
 				if [[ ! "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
-		        	echo "Terminating." && exit 1
+					echo "Terminating." && exit 1
 				fi
 			esac
 		done
