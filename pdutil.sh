@@ -68,7 +68,15 @@ function install() {
 		/usr/share/prizm/scripts/demos.sh restart
 
 		echo "Starting samples..."
-		firefox "localhost:18681/admin" "http://localhost:18681/PCCIS/V1/Static/Viewer/Test" "$([[ "$INCLUDE_PHP" == true ]] && "localhost/pccis_sample/splash")" "$([[ "$INCLUDE_JSP" == true ]] &&"localhost:8080/PCCSample")" &> /dev/null &
+		if [[ "$INCLUDE_PHP" == true && "$INCLUDE_JSP" == true ]]; then
+			firefox -new-tab "http://localhost:18681/admin" "http://localhost:18681/PCCIS/V1/Static/Viewer/Test" "http://localhost/pccis_sample/splash" "http://localhost:8080/PCCSample" &> /dev/null &
+		elif [[ "$INCLUDE_PHP" == true ]]; then
+			firefox -new-tab "http://localhost:18681/admin" "http://localhost:18681/PCCIS/V1/Static/Viewer/Test" "http://localhost/pccis_sample/splash" &> /dev/null &
+		elif [[ "$INCLUDE_JSP" == true ]]; then
+			firefox -new-tab "http://localhost:18681/admin" "http://localhost:18681/PCCIS/V1/Static/Viewer/Test" "http://localhost:8080/PCCSample" &> /dev/null &
+		else
+			firefox -new-tab "http://localhost:18681/admin" "http://localhost:18681/PCCIS/V1/Static/Viewer/Test" &> /dev/null &
+		fi
 	fi
 }
 
@@ -123,14 +131,71 @@ function download() {
 
 # ./pdutil.sh license
 function license() {
-	if [[ -d "$(/usr/share/prizm &> /dev/null)" ]]; then
-		read -rp "Solution name: " SOLUTION_NAME
-		read -rp "OEM key (leave blank for node-locked): " OEM_KEY
+	if [[ -d "/usr/share/prizm" ]]; then
+		while true; do
+			echo "  1.) I would like to license this system with an OEM LICENSE."
+			echo "  2.) I would like to license this system with a NODE-LOCKED LICENSE."
+			echo "  3.) I have a license but I do not know what type."
+			echo "  4.) I do not have a license but I would like an EVALUATION."
+			echo "  5.) I do not want to license my product at this time."
+			echo ""
 
-		echo "Licencing..."
-		if [ ! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar deploy write "$SOLUTION_NAME" "$OEM_KEY")" ]; then
-			echo "Licensing failed. Terminating." && exit 1
-		fi
+			RESPONSE=1
+			read -rp "Select an option (1-5) [1]: " RESPONSE
+			case "$RESPONSE" in
+			"1")
+				read -rp "Solution name: " SOLUTION_NAME
+				read -rp "OEM key: " OEM_KEY
+
+				echo "Licencing..."
+				if [ ! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar deploy write "$SOLUTION_NAME" "$OEM_KEY")" ]; then
+					echo "Licensing failed. Terminating." && exit 1
+				fi
+				;;
+			"2")
+				read -rp "Solution name: " SOLUTION_NAME
+				read -rp "Configuation file path (relative to $PWD): " CONFIG_FILE
+				read -rp "Access key: " ACCESS_KEY
+
+				echo "Licencing..."
+				if [ ! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar deploy get "$CONFIG_FILE" "$SOLUTION_NAME" "$ACCESS_KEY")" ]; then
+					echo "Licensing failed. Terminating." && exit 1
+				fi
+				;;
+			"3")
+				echo ""
+				echo "  You can find your license type by selecting the \"Licenses\" tab on the"
+				echo "Accusoft Portal: https://my.accusoft.com/"
+				echo ""
+				echo "  For an OEM LICENSE, you will be provided with a SOLUTION NAME and an OEM KEY."
+				echo ""
+				echo "  For a NODE-LOCKED LICENSE, you will be provided with a SOLUTION NAME, a"
+				echo "CONFIGUATION FILE, and an ACCESS KEY."
+				echo ""
+				echo "  If you have not spoken with a member of the Accusoft Sales department, it is"
+				echo "likely that you are interested in an EVALUATION."
+				echo ""
+				echo "  If you require additional assistance, please contact sales@accusoft.com."
+				echo ""
+				;;
+			"4")
+				read -rp "Email address: " EMAIL
+
+				if [ ! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar eval get "$EMAIL")" ]; then
+					echo "Licensing failed. Terminating." && exit 1
+				fi
+				;;
+			"5")
+				echo "Terminating." && exit 1
+				;;
+			*)
+				read -rp "Token \`$TOKEN\` unrecognized. Continue? [y/N] " RESPONSE
+				if [[ ! "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
+					echo "Terminating." && exit 1
+				fi
+			esac
+		done
+
 	else
 		echo "PrizmDoc is not installed. Terminating." && exit 1
 	fi
@@ -188,15 +253,17 @@ function main() {
 	# Detect operating system
 	if [[ -f "/usr/bin/apt-get" ]]; then
 		DEB_BASED=true
-		echo "Debian-based operating system detected. Proceeding."
+		# echo "Debian-based operating system detected."
 	elif [[ -f "/usr/bin/yum" ]]; then
 		RPM_BASED=true
 		echo "RPM-based operating system detected."
 		echo "Not yet implemented. Terminating." && exit 1
+		echo ""
 	else
 		NIX_BASED=true
 		echo "Generic *nix-based operating system detected."
 		echo "Not yet implemented. Terminating." && exit 1
+		echo ""
 	fi
 
 	case $1 in
