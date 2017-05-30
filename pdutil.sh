@@ -13,6 +13,35 @@ function install() {
 		echo "Extraction failed. Terminating." && exit 1
 	fi
 
+	# Install
+	if [[ $DEB_BASED == true ]]; then
+		install_deb
+	elif [[ $RPM_BASED == true ]]; then
+		install_rpm
+	fi
+
+	echo "Successfully installed."
+	if [[ ! "$EXCLUDE_PAS" == true ]]; then
+		echo "Restarting PAS..."
+		/usr/share/prizm/pas/pm2/pas.sh restart
+
+		echo "Restarting samples..."
+		/usr/share/prizm/scripts/demos.sh restart
+
+		echo "Starting samples..."
+		if [[ "$INCLUDE_PHP" == true && "$INCLUDE_JSP" == true ]]; then
+			firefox -new-tab "http://localhost:18681/admin" "http://localhost:18681/PCCIS/V1/Static/Viewer/Test" "http://localhost/pccis_sample/splash" "http://localhost:8080/PCCSample" &> /dev/null &
+		elif [[ "$INCLUDE_PHP" == true ]]; then
+			firefox -new-tab "http://localhost:18681/admin" "http://localhost:18681/PCCIS/V1/Static/Viewer/Test" "http://localhost/pccis_sample/splash" &> /dev/null &
+		elif [[ "$INCLUDE_JSP" == true ]]; then
+			firefox -new-tab "http://localhost:18681/admin" "http://localhost:18681/PCCIS/V1/Static/Viewer/Test" "http://localhost:8080/PCCSample" &> /dev/null &
+		else
+			firefox -new-tab "http://localhost:18681/admin" "http://localhost:18681/PCCIS/V1/Static/Viewer/Test" &> /dev/null &
+		fi
+	fi
+}
+
+function install_deb() {
 	echo "Resolving dependencies..."
 	if [[ ! "$EXCLUDE_SERVER" == true ]]; then
 		dpkg --force-depends -i ./*server*/*.deb
@@ -36,7 +65,7 @@ function install() {
 	if [[ ! "$EXCLUDE_PAS" == true ]]; then
 		if [[ "$INCLUDE_PHP" == true ]]; then
 			echo "Installing apache2..."
-			apt-get install -y apache2 &> /dev/null
+			apt-get install -y apache2
 
 			echo "Installing php5..."
 			apt-get install -y php5 libapache2-mod-php5
@@ -60,22 +89,51 @@ function install() {
 			echo "Restarting tomcat..."
 			service tomcat7 restart
 		fi
+	fi
+}
 
-		echo "Restarting PAS..."
-		/usr/share/prizm/pas/pm2/pas.sh restart
+function install_rpm() {
+	echo "Installing PrizmDoc..."
+	if [[ ! "$EXCLUDE_SERVER" == true ]]; then
+		yum install -nogpgcheck ./*server*/*.rpm
+	fi
 
-		echo "Restarting samples..."
-		/usr/share/prizm/scripts/demos.sh restart
+	if [[ ! "$EXCLUDE_PAS" == true ]]; then
+		yum install -nogpgcheck ./*client*/*.rpm
+	fi
 
-		echo "Starting samples..."
-		if [[ "$INCLUDE_PHP" == true && "$INCLUDE_JSP" == true ]]; then
-			firefox -new-tab "http://localhost:18681/admin" "http://localhost:18681/PCCIS/V1/Static/Viewer/Test" "http://localhost/pccis_sample/splash" "http://localhost:8080/PCCSample" &> /dev/null &
-		elif [[ "$INCLUDE_PHP" == true ]]; then
-			firefox -new-tab "http://localhost:18681/admin" "http://localhost:18681/PCCIS/V1/Static/Viewer/Test" "http://localhost/pccis_sample/splash" &> /dev/null &
-		elif [[ "$INCLUDE_JSP" == true ]]; then
-			firefox -new-tab "http://localhost:18681/admin" "http://localhost:18681/PCCIS/V1/Static/Viewer/Test" "http://localhost:8080/PCCSample" &> /dev/null &
-		else
-			firefox -new-tab "http://localhost:18681/admin" "http://localhost:18681/PCCIS/V1/Static/Viewer/Test" &> /dev/null &
+	if [[ ! "$EXCLUDE_SERVER" == true ]]; then
+		echo "Restarting services..."
+		/usr/share/prizm/scripts/pccis.sh restart
+	fi
+
+	echo "Successfully installed."
+	if [[ ! "$EXCLUDE_PAS" == true ]]; then
+		if [[ "$INCLUDE_PHP" == true ]]; then
+			echo "Installing apache2..."
+			yum install -y httpd
+
+			echo "Installing php5..."
+			yum install -y php
+			
+			echo "Restarting apache2..."
+			systemctl httpd.service
+			systemctl enable httpd.service
+		fi
+
+		if [[ "$INCLUDE_JSP" == true ]]; then
+			echo "Installing java..."
+			yum install -y java-1.7.0-openjdk
+
+			echo "Installing tomcat7..."
+			yum install -y tomcat
+
+			echo "Deploying PCCSample.war..."
+			cp /usr/share/prizm/Samples/jsp/target/PCCSample.war /usr/share/tomcat7/webapps/
+
+			echo "Restarting tomcat..."
+			systemctl start tomcat
+			systemctl enable tomcat
 		fi
 	fi
 }
@@ -114,8 +172,13 @@ function remove() {
 function download() {
 	SOURCE="$(wget -qO- https://www.accusoft.com/products/prizmdoc/eval/)"
 
-	SERVER_LATEST="$(echo "$SOURCE" | grep -Eio "http://products.accusoft.com/[a-zA-Z0-9./?=_-]*server[a-zA-Z0-9./?=_-]*.deb.tar.gz" | uniq | sort --reverse | head -n1)"
-	CLIENT_LATEST="$(echo "$SOURCE" | grep -Eio "http://products.accusoft.com/[a-zA-Z0-9./?=_-]*client[a-zA-Z0-9./?=_-]*.deb.tar.gz" | uniq | sort --reverse | head -n1)"
+	if [[ $DEB_BASED == true ]]; then
+		SERVER_LATEST="$(echo "$SOURCE" | grep -Eio "http://products.accusoft.com/[a-zA-Z0-9./?=_-]*server[a-zA-Z0-9./?=_-]*.deb.tar.gz" | uniq | sort --reverse | head -n1)"
+		CLIENT_LATEST="$(echo "$SOURCE" | grep -Eio "http://products.accusoft.com/[a-zA-Z0-9./?=_-]*client[a-zA-Z0-9./?=_-]*.deb.tar.gz" | uniq | sort --reverse | head -n1)"
+	elif [[ $RPM_BASED == true ]]; then
+		SERVER_LATEST="$(echo "$SOURCE" | grep -Eio "http://products.accusoft.com/[a-zA-Z0-9./?=_-]*server[a-zA-Z0-9./?=_-]*.rpm.tar.gz" | uniq | sort --reverse | head -n1)"
+		CLIENT_LATEST="$(echo "$SOURCE" | grep -Eio "http://products.accusoft.com/[a-zA-Z0-9./?=_-]*client[a-zA-Z0-9./?=_-]*.rpm.tar.gz" | uniq | sort --reverse | head -n1)"
+	fi
 
 	if [[ ! "$EXCLUDE_SERVER" == true ]]; then
 		echo "Downloading Server..."
@@ -255,9 +318,7 @@ function main() {
 		# echo "Debian-based operating system detected."
 	elif [[ -f "/usr/bin/yum" ]]; then
 		RPM_BASED=true
-		echo "RPM-based operating system detected."
-		echo "Not yet implemented. Terminating." && exit 1
-		echo ""
+		# echo "RPM-based operating system detected."
 	else
 		NIX_BASED=true
 		echo "Generic *nix-based operating system detected."
