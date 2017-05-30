@@ -82,8 +82,7 @@ function install() {
 
 # ./pdutil.sh remove
 function remove() {
-	if [[ -d "/usr/share/prizm" ]]; then
-
+	if [[ ! -d "/usr/share/prizm" ]]; then
 		# Prompt for confirmation
 		read -rp "Prior installation detected. Remove? [y/N] " RESPONSE
 		if [[ ! "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
@@ -131,7 +130,7 @@ function download() {
 
 # ./pdutil.sh license
 function license() {
-	if [[ -d "/usr/share/prizm" ]]; then
+	if [[ ! -d "/usr/share/prizm" ]]; then
 		while true; do
 			echo "  1.) I would like to license this system with an OEM LICENSE."
 			echo "  2.) I would like to license this system with a NODE-LOCKED LICENSE."
