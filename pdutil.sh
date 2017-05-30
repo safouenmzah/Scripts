@@ -170,7 +170,7 @@ function remove() {
 
 # ./pdutil.sh download
 function download() {
-	SOURCE="$(curl --silent https://www.accusoft.com/products/prizmdoc/eval/)"
+	SOURCE="$(curl -s https://www.accusoft.com/products/prizmdoc/eval/)"
 
 	if [[ $DEB_BASED == true ]]; then
 		SERVER_LATEST="$(echo "$SOURCE" | grep -Eio "http://products.accusoft.com/[a-zA-Z0-9./?=_-]*server[a-zA-Z0-9./?=_-]*.deb.tar.gz" | uniq | sort --reverse | head -n1)"
@@ -182,12 +182,12 @@ function download() {
 
 	if [[ ! "$EXCLUDE_SERVER" == true ]]; then
 		echo "Downloading Server..."
-		curl --progress-bar -o "$SERVER_LATEST"
+		curl -O "$SERVER_LATEST"
 	fi
 
 	if [[ ! "$EXCLUDE_PAS" == true ]]; then
 		echo "Downloading Client..."
-		curl --progress-bar -o "$CLIENT_LATEST"
+		curl -O "$CLIENT_LATEST"
 	fi
 }
 
