@@ -147,17 +147,17 @@ function license() {
 				read -rp "Solution name: " SOLUTION_NAME
 				read -rp "OEM key: " OEM_KEY
 
-				echo "Licencing..."
+				echo "Licensing..."
 				if [ ! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar deploy write "$SOLUTION_NAME" "$OEM_KEY")" ]; then
 					echo "Licensing failed. Terminating." && exit 1
 				fi
 				;;
 			"2")
 				read -rp "Solution name: " SOLUTION_NAME
-				read -rp "Configuation file path (relative to $PWD): " CONFIG_FILE
+				read -rp "Configuration file path (relative to $PWD): " CONFIG_FILE
 				read -rp "Access key: " ACCESS_KEY
 
-				echo "Licencing..."
+				echo "Licensing..."
 				if [ ! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar deploy get "$CONFIG_FILE" "$SOLUTION_NAME" "$ACCESS_KEY")" ]; then
 					echo "Licensing failed. Terminating." && exit 1
 				fi
@@ -205,7 +205,7 @@ function license() {
 function clearlogs() {
 	# Prompt for confirmation
 	read -rp "Clear logs? [y/N] " RESPONSE
-	if [[ "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
+	if [[ ! "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
 		echo "Terminating." && exit 1
 	fi
 
@@ -237,9 +237,9 @@ function main() {
 	EXCLUDE_PAS=false
 	EXCLUDE_SERVER=false
 
-	# Check privilages
+	# Check privileges
 	if [[ "$(/usr/bin/id -u)" != 0 ]]; then
-		echo "Insufficient privilages. Terminating." && exit 1
+		echo "Insufficient privileges. Terminating." && exit 1
 	fi
 
 	# Check architecture
