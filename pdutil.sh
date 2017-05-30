@@ -110,14 +110,16 @@ function install_rpm() {
 	echo "Successfully installed."
 	if [[ ! "$EXCLUDE_PAS" == true ]]; then
 		if [[ "$INCLUDE_PHP" == true ]]; then
-			echo "Installing apache2..."
+			echo "Installing apache..."
 			yum install -y httpd
 
-			echo "Installing php5..."
+			echo "Installing php..."
 			yum install -y php
+
+			sed -i "\nAlias /pccis_sample /usr/share/prizm/Samples/php\n<Directory /usr/share/prizm/Samples/php>\n\tAllowOverride All\n\tRequire all granted\n</Directory>" >> /etc/httpd/conf.d/php.conf
 			
-			echo "Restarting apache2..."
-			systemctl httpd.service
+			echo "Restarting apache..."
+			systemctl restart httpd.service
 			systemctl enable httpd.service
 		fi
 
@@ -125,14 +127,14 @@ function install_rpm() {
 			echo "Installing java..."
 			yum install -y java-1.7.0-openjdk
 
-			echo "Installing tomcat7..."
-			yum install -y tomcat
+			echo "Installing tomcat..."
+			yum install -y tomcat tomcat-webapps tomcat-admin-webapps
 
 			echo "Deploying PCCSample.war..."
-			cp /usr/share/prizm/Samples/jsp/target/PCCSample.war /usr/share/tomcat7/webapps/
+			cp /usr/share/prizm/Samples/jsp/target/PCCSample.war /usr/share/tomcat/webapps/
 
 			echo "Restarting tomcat..."
-			systemctl start tomcat
+			systemctl restart tomcat
 			systemctl enable tomcat
 		fi
 	fi
