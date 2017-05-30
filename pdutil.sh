@@ -95,11 +95,11 @@ function install_deb() {
 function install_rpm() {
 	echo "Installing PrizmDoc..."
 	if [[ ! "$EXCLUDE_SERVER" == true ]]; then
-		yum install --nogpgcheck ./*server*/*.rpm
+		yum install -y --nogpgcheck ./*server*/*.rpm
 	fi
 
 	if [[ ! "$EXCLUDE_PAS" == true ]]; then
-		yum install --nogpgcheck ./*client*/*.rpm
+		yum install -y --nogpgcheck ./*client*/*.rpm
 	fi
 
 	if [[ ! "$EXCLUDE_SERVER" == true ]]; then
