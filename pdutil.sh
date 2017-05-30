@@ -182,12 +182,12 @@ function download() {
 
 	if [[ ! "$EXCLUDE_SERVER" == true ]]; then
 		echo "Downloading Server..."
-		curl -o --progress-bar "$SERVER_LATEST"
+		curl --progress-bar -o "$SERVER_LATEST"
 	fi
 
 	if [[ ! "$EXCLUDE_PAS" == true ]]; then
 		echo "Downloading Client..."
-		curl -o --progress-bar "$CLIENT_LATEST"
+		curl --progress-bar -o "$CLIENT_LATEST"
 	fi
 }
 
