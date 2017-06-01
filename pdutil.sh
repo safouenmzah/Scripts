@@ -96,7 +96,7 @@ function install_deb() {
 }
 
 function install_rpm() {
-	# Update yum for fresh installations
+	# Update yum for fresh RPM installations
 	yum update &> /dev/null
 
 	echo "Installing PrizmDoc..."
@@ -178,6 +178,11 @@ function remove() {
 
 # ./pdutil.sh download
 function download() {
+	# Install curl for fresh Debian installations
+	if [[ $DEB_BASED == true ]]; then
+		apt-get install curl &> /dev/null
+	fi
+
 	SOURCE="$(curl -s https://www.accusoft.com/products/prizmdoc/eval/)"
 
 	if [[ $DEB_BASED == true ]]; then
