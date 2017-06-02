@@ -223,7 +223,7 @@ function license() {
 				read -rp "OEM key: " OEM_KEY
 
 				echo "Licensing..."
-				if [ ! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar deploy write "$SOLUTION_NAME" "$OEM_KEY")" ]; then
+				if [[ ! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar deploy write "$SOLUTION_NAME" "$OEM_KEY")" ]]; then
 					echo "Licensing failed. Terminating." && exit 1
 				fi
 				;;
@@ -233,7 +233,7 @@ function license() {
 				read -rp "Access key: " ACCESS_KEY
 
 				echo "Licensing..."
-				if [ ! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar deploy get "$CONFIG_FILE" "$SOLUTION_NAME" "$ACCESS_KEY")" ]; then
+				if [[ ! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar deploy get "$CONFIG_FILE" "$SOLUTION_NAME" "$ACCESS_KEY")" ]]; then
 					echo "Licensing failed. Terminating." && exit 1
 				fi
 				;;
@@ -256,7 +256,7 @@ function license() {
 			"4")
 				read -rp "Email address: " EMAIL
 
-				if [ ! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar eval get "$EMAIL")" ]; then
+				if [[ ! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar eval get "$EMAIL")" ]]; then
 					echo "Licensing failed. Terminating." && exit 1
 				fi
 				;;
