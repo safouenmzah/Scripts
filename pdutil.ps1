@@ -70,15 +70,16 @@ Function Install {
 		Restart-Service PrizmDemo
 
 		Write-Output "Starting samples..."
+
+		Start-Process -FilePath "http://localhost:18681/admin"
+		Start-Process -FilePath "http://localhost:18681/PCCIS/V1/Static/Viewer/Test"
+
 		If ($INCLUDE_PHP) {
 			Start-Process -FilePath "http://localhost/pccis_sample/splash"
 		} 
 		If ($INCLUDE_JSP) {
 			Start-Process -FilePath "http://localhost:8080/PCCSample"
 		}
-
-		Start-Process -FilePath "http://localhost:18681/admin"
-		Start-Process -FilePath "http://localhost:18681/PCCIS/V1/Static/Viewer/Test"
 	}
 }
 
@@ -319,6 +320,7 @@ Function Main {
 			Write-Output "Options:"
 			Write-Output "  -IncludePHP     Include PHP Samples"
 			Write-Output "  -IncludeJSP     Include JSP Samples"
+			Write-Output "  -IncludeNET     Include .NET Framework Samples"
 			Write-Output "  -ExcludePAS     Exclude PAS"
 			Write-Output "  -ExcludeServer  Exclude PrizmDoc Server"
 		}
