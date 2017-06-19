@@ -165,7 +165,11 @@ function remove() {
 		/usr/share/prizm/scripts/demos.sh stop &> /dev/null
 
 		echo "Removing dependencies..."
-		apt-get -fy remove prizm-services.* &> /dev/null
+		if [[ $DEB_BASED == true ]]; then
+			apt-get -fy remove prizm-services.* &> /dev/null
+		elif [[ $RPM_BASED == true ]]; then
+			yum remove -y prizm-services.* &> /dev/null
+		fi
 
 		echo "Removing remaining files..."
 		rm -rf /usr/share/prizm
