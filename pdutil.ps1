@@ -1,3 +1,11 @@
+param(
+    [Parameter(Mandatory=$false,Position=1)][string]$CMD,
+    [Parameter(Mandatory=$false)][switch]$INCLUDE_JSP,
+    [Parameter(Mandatory=$false)][switch]$INCLUDE_PHP,
+    [Parameter(Mandatory=$false)][switch]$EXCLUDE_PAS,
+    [Parameter(Mandatory=$false)][switch]$EXCLUDE_SERVER
+)
+
 # .\pdutil.ps1 Install
 Function Install {
     # Enter temporary directory
@@ -15,92 +23,109 @@ Function Install {
     # Install
     If (!($EXCLUDE_PAS)) {
         Write-Output "Resolving dependencies..."
-        Enable-WindowsOptionalFeature -FeatureName "IIS-WebServerRole"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-WebServer"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-CommonHttpFeatures"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-HttpErrors"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-ApplicationDevelopment"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-NetFxExtensibility45"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-HealthAndDiagnostics"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-HttpLogging"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-Security"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-RequestFiltering"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-Performance"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-WebServerManagementTools"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-StaticContent"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-DefaultDocument"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-DirectoryBrowsing"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-ASPNET45"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-ISAPIExtensions"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-ISAPIFilter"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-HttpCompressionStatic"
-        Enable-WindowsOptionalFeature -FeatureName "IIS-ManagementConsole"
-        Enable-WindowsOptionalFeature -FeatureName "NetFx4Extended-ASPNET45"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-WebServerRole"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-WebServer"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-CommonHttpFeatures"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-HttpErrors"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-ApplicationDevelopment"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-NetFxExtensibility45"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-HealthAndDiagnostics"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-HttpLogging"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-Security"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-RequestFiltering"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-Performance"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-WebServerManagementTools"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-StaticContent"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-DefaultDocument"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-DirectoryBrowsing"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-ASPNET45" -All
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-ISAPIExtensions"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-ISAPIFilter"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-HttpCompressionStatic"
+        Enable-WindowsOptionalFeature -Online -FeatureName "IIS-ManagementConsole"
+        Enable-WindowsOptionalFeature -Online -FeatureName "NetFx4Extended-ASPNET45"
     }
 
-    Write-Output "Installing PrizmDoc..."
-    If (!($EXCLUDE_SERVER)) {
-        PrizmDocServer.exe ServiceUser=DOMAIN.TLD\USERNAME ServicePassword=PASSWORD -s
-    }
-
-    If (!($EXCLUDE_PAS)) {
-        PrizmDocClient.exe ServiceUser=DOMAIN.TLD\USERNAME ServicePassword=PASSWORD -s
-    }
+    # Get credentials here.
+    $USER=$ENV:USERDOMAIN + "\" + $ENV:USERNAME
+    $C = Get-Credential -Message "Enter you Username and Password." -UserName $USER
 
     If (!($EXCLUDE_SERVER)) {
-        Write-Output "Restarting services..."
-        Restart-Service Prizm
+        Write-Output "Installing PrizmDoc Server..."
+        $ARGLIST="-s -l server_log.out ServiceUser="+$C.UserName+" ServicePassword="+$C.GetNetworkCredential().Password
+        $INSTALLER=(Start-Process ".\PrizmDocServer.exe" -ArgumentList $ARGLIST -PassThru)
+        $INSTALLER.WaitForExit()
+
+        If ($INSTALLER.ExitCode -ne 0) {
+            Write-Output "Error installing server..."
+        }
+        Else {
+            Write-Output "Restarting services..."
+            Restart-Service Prizm
+
+            If ((Get-Service Prizm).Status -ne "Running") {
+                Write-Output "Unable to restart service 'Prizm'..."
+            }
+
+            If ($INCLUDE_PHP) {
+                Write-Output "Installing apache..."
+                choco install apache-httpd
+
+                Write-Output "Installing php..."
+                choco install php
+
+                Write-Output "Restarting apache2..."
+                Restart-Service Apache
+            }
+
+            If ($INCLUDE_JSP) {
+                Write-Output "Installing java..."
+                choco install jre8
+
+                Write-Output "Installing tomcat7..."
+                choco install tomcat
+
+                Write-Output "Deploying PCCSample.war..."
+                Copy-Item "C:\Prizm\Samples\jsp\target\PCCSample.war" "C:\Program Files\Tomcat\webapps"
+
+                Write-Output "Restarting tomcat..."
+                Restart-Service Tomcat
+            }
+
+            Write-Output "PrizmDoc Server successfully installed..."
+        }
     }
 
-    Write-Output "Successfully installed."
     If (!($EXCLUDE_PAS)) {
-        If ($INCLUDE_PHP) {
-            Write-Output "Installing apache..."
-            choco install apache-httpd
+        Write-Output "Installing PrizmDoc Client..."
+        $ARGLIST="-s -l client_log.out ServiceUser="+$C.UserName+" ServicePassword="+$C.GetNetworkCredential().Password
+        $INSTALLER=(Start-Process ".\PrizmDocClient.exe" -ArgumentList $ARGLIST -PassThru)
+        $INSTALLER.WaitForExit()
 
-            Write-Output "Installing php..."
-            choco install php
-
-            Write-Output "Restarting apache2..."
-            Restart-Service Apache
+        If ($INSTALLER.ExitCode -ne 0) {
+            Write-Output "Error installing client..."
         }
+        Else {
+            # License
+            License
 
-        If ($INCLUDE_JSP) {
-            Write-Output "Installing java..."
-            choco install jre8
+            Write-Output "Restarting PAS..."
+            Restart-Service PrizmApplicationServices
 
-            Write-Output "Installing tomcat7..."
-            choco install tomcat
+            Write-Output "Restarting samples..."
+            Restart-Service PrizmDemo
 
-            Write-Output "Deploying PCCSample.war..."
-            Copy-Item "C:\Prizm\Samples\jsp\target\PCCSample.war" "C:\Program Files\Tomcat\webapps"
+            Write-Output "Starting samples..."
 
-            Write-Output "Restarting tomcat..."
-            Restart-Service Tomcat
-        }
-    }
+            Start-Process -FilePath "http://localhost:18681/admin"
+            Start-Process -FilePath "http://localhost:18681/PCCIS/V1/Static/Viewer/Test"
 
-    Write-Output "Successfully installed."
-    If (!($EXCLUDE_PAS)) {
-        # License
-        License
-
-        Write-Output "Restarting PAS..."
-        Restart-Service PrizmApplicationServices
-
-        Write-Output "Restarting samples..."
-        Restart-Service PrizmDemo
-
-        Write-Output "Starting samples..."
-
-        Start-Process -FilePath "http://localhost:18681/admin"
-        Start-Process -FilePath "http://localhost:18681/PCCIS/V1/Static/Viewer/Test"
-
-        If ($INCLUDE_PHP) {
-            Start-Process -FilePath "http://localhost/pccis_sample/splash"
-        } 
-        If ($INCLUDE_JSP) {
-            Start-Process -FilePath "http://localhost:8080/PCCSample"
+            If ($INCLUDE_PHP) {
+                Start-Process -FilePath "http://localhost/pccis_sample/splash"
+            }
+            If ($INCLUDE_JSP) {
+                Start-Process -FilePath "http://localhost:8080/PCCSample"
+            }
         }
     }
 }
@@ -109,7 +134,7 @@ Function Install {
 Function Remove {
     If (Test-Path "C:\Prizm") {
         # Prompt for confirmation
-        $RESPONSE = Read-Host -Prompt "Prior installation detected. Remove? [y/N] " 
+        $RESPONSE = Read-Host -Prompt "Prior installation detected. Remove? [y/N] "
         If (!($RESPONSE  -match "^([yY][eE][sS]|[yY])$")) {
             Write-Output "Terminating."
             Exit 1
@@ -135,19 +160,19 @@ Function Remove {
 
 # .\pdutil.ps1 Download
 Function Download {
-    $SOURCE="$(curl -s https://www.accusoft.com/products/prizmdoc/eval/)"
+    $SOURCE=(Invoke-WebRequest -Uri "https://www.accusoft.com/products/prizmdoc/eval/" -Method Get -UseBasicParsing).Content
 
-    $SERVER_LATEST="$(Write-Output "$SOURCE" | grep -Eio "http://products.accusoft.com/[a-zA-Z0-9./?=_-]*server[a-zA-Z0-9./?=_-]*.deb.tar.gz" | uniq | sort --reverse | head -n1)"
-    $CLIENT_LATEST="$(Write-Output "$SOURCE" | grep -Eio "http://products.accusoft.com/[a-zA-Z0-9./?=_-]*client[a-zA-Z0-9./?=_-]*.deb.tar.gz" | uniq | sort --reverse | head -n1)"
+    $SERVER_LATEST=($SOURCE | Select-String -Pattern "http://products.accusoft.com/[a-zA-Z0-9./?=_-]*server[a-zA-Z0-9./?=_-]*.exe").Matches[0].Value
+    $CLIENT_LATEST=($SOURCE | Select-String -Pattern "http://products.accusoft.com/[a-zA-Z0-9./?=_-]*client[a-zA-Z0-9./?=_-]*.exe").Matches[0].Value
 
     If (!($EXCLUDE_SERVER)) {
         Write-Output "Downloading Server..."
-        curl -O "$SERVER_LATEST"
+        Invoke-WebRequest -Uri $SERVER_LATEST -Method Get -UseBasicParsing -OutFile "PrizmDocServer.exe"
     }
 
     If (!($EXCLUDE_PAS)) {
         Write-Output "Downloading Client..."
-        curl -O "$CLIENT_LATEST"
+        Invoke-WebRequest -Uri $CLIENT_LATEST -Method Get -UseBasicParsing -OutFile "PrizmDocClient.exe"
     }
 }
 
@@ -163,11 +188,11 @@ Function License {
             Write-Output ""
 
             $RESPONSE = 1
-            $RESPONSE = Read-Host -Prompt "Select an option (1-5) [1]: " 
+            $RESPONSE = Read-Host -Prompt "Select an option (1-5) [1]: "
             Switch ($RESPONSE) {
                 "1" {
-                    $SOLUTION_NAME = Read-Host -Prompt "Solution name: " 
-                    $OEM_KEY = Read-Host -Prompt "OEM key: " 
+                    $SOLUTION_NAME = Read-Host -Prompt "Solution name: "
+                    $OEM_KEY = Read-Host -Prompt "OEM key: "
 
                     Write-Output "Licensing..."
                     If (! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar deploy write "$SOLUTION_NAME" "$OEM_KEY")") {
@@ -177,9 +202,9 @@ Function License {
                     break
                 }
                 "2" {
-                    $SOLUTION_NAME = Read-Host -Prompt "Solution name: " 
-                    $CONFIG_FILE = Read-Host -Prompt "Configuration file path (relative to $PWD): " 
-                    $ACCESS_KEY = Read-Host -Prompt "Access key: " 
+                    $SOLUTION_NAME = Read-Host -Prompt "Solution name: "
+                    $CONFIG_FILE = Read-Host -Prompt "Configuration file path (relative to $PWD): "
+                    $ACCESS_KEY = Read-Host -Prompt "Access key: "
 
                     Write-Output "Licensing..."
                     If (! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar deploy get "$CONFIG_FILE" "$SOLUTION_NAME" "$ACCESS_KEY")") {
@@ -206,7 +231,7 @@ Function License {
                     break
                 }
                 "4" {
-                    $EMAIL = Read-Host -Prompt "Email address: " 
+                    $EMAIL = Read-Host -Prompt "Email address: "
 
                     If (! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar eval get "$EMAIL")") {
                         Write-Output "Licensing failed. Terminating."
@@ -220,7 +245,7 @@ Function License {
                     break
                 }
                 * {
-                    $RESPONSE = Read-Host -Prompt "Token \`$TOKEN\` unrecognized. Continue? [y/N] " 
+                    $RESPONSE = Read-Host -Prompt "Token \`$TOKEN\` unrecognized. Continue? [y/N] "
                     If (!($RESPONSE  -match "^([yY][eE][sS]|[yY])$")) {
                         Write-Output "Terminating."
                         Exit 1
@@ -238,7 +263,7 @@ Function License {
 # .\pdutil.ps1 Clear-Logs
 Function Clear-Logs {
     # Prompt for confirmation
-    $RESPONSE = Read-Host -Prompt "Clear logs? [y/N] " 
+    $RESPONSE = Read-Host -Prompt "Clear logs? [y/N] "
     If (!($RESPONSE  -match "^([yY][eE][sS]|[yY])$")) {
         Write-Output "Terminating."
         Exit 1
@@ -257,16 +282,33 @@ Function Clear-Logs {
     Write-Output "Successfully removed."
 }
 
+# .\pdutil.ps1 Help
+Function PrintHelp {
+    Write-Output "Usage:"
+    Write-Output "  @powershell -NoProfile -ExecutionPolicy Bypass -File .\pdutil.ps1 (Command) [Options]"
+    Write-Output ""
+    Write-Output "Reduces common PrizmDoc maintenance tasks down to proper Linux one-liners."
+    Write-Output ""
+    Write-Output "Commands:"
+    Write-Output "  Install - Installs PrizmDoc"
+    Write-Output "  Remove - Removes prior PrizmDoc installation"
+    Write-Output "  Download - Downloads PrizmDoc"
+    Write-Output "  License - Licenses PrizmDoc"
+    Write-Output "  Clear-Logs - Clears the PrizmDoc log files"
+    Write-Output ""
+    Write-Output "Options:"
+    Write-Output "  -IncludePHP     Include PHP Samples"
+    Write-Output "  -IncludeJSP     Include JSP Samples"
+    Write-Output "  -IncludeNET     Include .NET Framework Samples"
+    Write-Output "  -ExcludePAS     Exclude PAS"
+    Write-Output "  -ExcludeServer  Exclude PrizmDoc Server"
+}
+
 # .\pdutil.ps1 *
 Function Main {
     Write-Output ""
     Write-Output "PrizmDoc Utility v1.0"
     Write-Output ""
-
-    $INCLUDE_PHP = $false
-    $INCLUDE_JSP = $false
-    $EXCLUDE_PAS = $false
-    $EXCLUDE_SERVER = $false
 
     # Check privileges
     If (!([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
@@ -283,32 +325,8 @@ Function Main {
     # Save current working directory
     $CWD = Get-Location
 
-    Switch ($args[0]) {
+    Switch ($CMD) {
         "Install" {
-            ForEach ($arg in $args) {
-                Switch ($TOKEN) {
-                    "-IncludePHP" {
-                        $INCLUDE_PHP = $true
-                    }
-                    "-IncludeJSP" {
-                        $INCLUDE_JSP = $true
-                    }
-                    "-ExcludePAS" {
-                        $EXCLUDE_PAS = $true
-                    }
-                    "-ExcludeServer" {
-                        $EXCLUDE_SERVER = $true
-                    }
-                    default {
-                        $RESPONSE = Read-Host -Prompt "Token \`$TOKEN\` unrecognized. Continue? [y/N] " 
-                        If (!($RESPONSE  -match "^([yY][eE][sS]|[yY])$")) {
-                            Write-Output "Terminating."
-                            Exit 1
-                        }
-                    }
-                }
-            }
-
             Install
             break
         }
@@ -317,27 +335,6 @@ Function Main {
             break
         }
         "Download" {
-            ForEach ($arg in $args) {
-                Switch ($TOKEN) {
-                    "-ExcludePAS" {
-                        $EXCLUDE_PAS=true
-                        break
-                    }
-                    "-ExcludeServer" {
-                        $EXCLUDE_SERVER=true
-                        break
-                    }
-                    default {
-                        $RESPONSE = Read-Host -Prompt "Token `$TOKEN` unrecognized. Continue? [y/N] " 
-                        If (!($RESPONSE  -match "^([yY][eE][sS]|[yY])$")) {
-                            Write-Output "Terminating."
-                            Exit 1
-                        }
-                        break
-                    }
-                }
-            }
-
             Download
             break
         }
@@ -350,24 +347,12 @@ Function Main {
             break
         }
         default {
-            Write-Output "Usage:"
-            Write-Output "  @powershell -NoProfile -ExecutionPolicy Bypass -File .\pdutil.ps1 (Command) [Options]"
+            Write-Output "Unrecognized Option: $CMD"
             Write-Output ""
-            Write-Output "Reduces common PrizmDoc maintenance tasks down to proper Linux one-liners."
-            Write-Output ""
-            Write-Output "Commands:"
-            Write-Output "  Install - Installs PrizmDoc"
-            Write-Output "  Remove - Removes prior PrizmDoc installation"
-            Write-Output "  Download - Downloads PrizmDoc"
-            Write-Output "  License - Licenses PrizmDoc"
-            Write-Output "  Clear-Logs - Clears the PrizmDoc log files"
-            Write-Output ""
-            Write-Output "Options:"
-            Write-Output "  -IncludePHP     Include PHP Samples"
-            Write-Output "  -IncludeJSP     Include JSP Samples"
-            Write-Output "  -IncludeNET     Include .NET Framework Samples"
-            Write-Output "  -ExcludePAS     Exclude PAS"
-            Write-Output "  -ExcludeServer  Exclude PrizmDoc Server"
+            PrintHelp
+        }
+        "Help" {
+            PrintHelp
             break
         }
     }
@@ -378,4 +363,4 @@ Function Main {
     Exit 0
 }
 
-Main $args
+Main
