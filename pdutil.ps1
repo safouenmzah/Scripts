@@ -179,13 +179,16 @@ Function Download {
 # .\pdutil.ps1 License
 Function License {
     If (Test-Path C:\Prizm) {
-        while ($true) {
+        $loop = $true
+        while ($loop) {
             Write-Output "  1.) I would like to license this system with an OEM LICENSE."
             Write-Output "  2.) I would like to license this system with a NODE-LOCKED LICENSE."
             Write-Output "  3.) I have a license but I do not know what type."
             Write-Output "  4.) I do not have a license but I would like an EVALUATION."
             Write-Output "  5.) I do not want to license my product at this time."
             Write-Output ""
+
+            $ARGLIST = $null
 
             $RESPONSE = 1
             $RESPONSE = Read-Host -Prompt "Select an option (1-5) [1]: "
@@ -194,11 +197,7 @@ Function License {
                     $SOLUTION_NAME = Read-Host -Prompt "Solution name: "
                     $OEM_KEY = Read-Host -Prompt "OEM key: "
 
-                    Write-Output "Licensing..."
-                    If (! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar deploy write "$SOLUTION_NAME" "$OEM_KEY")") {
-                        Write-Output "Licensing failed. Terminating."
-                        Exit 1
-                    }
+                    $ARGLIST = "-jar","C:\Prizm\plu\plu.jar","deploy","write","$SOLUTION_NAME", "$OEM_KEY"
                     break
                 }
                 "2" {
@@ -206,11 +205,7 @@ Function License {
                     $CONFIG_FILE = Read-Host -Prompt "Configuration file path (relative to $PWD): "
                     $ACCESS_KEY = Read-Host -Prompt "Access key: "
 
-                    Write-Output "Licensing..."
-                    If (! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar deploy get "$CONFIG_FILE" "$SOLUTION_NAME" "$ACCESS_KEY")") {
-                        Write-Output "Licensing failed. Terminating."
-                        Exit 1
-                    }
+                    $ARGLIST = "-jar", "C:\Prizm\plu\plu.jar", "deploy", "get", "$CONFIG_FILE", "$SOLUTION_NAME", "$ACCESS_KEY"
                     break
                 }
                 "3" {
@@ -233,10 +228,7 @@ Function License {
                 "4" {
                     $EMAIL = Read-Host -Prompt "Email address: "
 
-                    If (! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar plu/plu.jar eval get "$EMAIL")") {
-                        Write-Output "Licensing failed. Terminating."
-                        Exit 1
-                    }
+                    $ARGLIST = "-jar", "C:\Prizm\plu\plu.jar", "eval", "get", "$EMAIL"
                     break
                 }
                 "5" {
@@ -245,12 +237,30 @@ Function License {
                     break
                 }
                 * {
-                    $RESPONSE = Read-Host -Prompt "Token \`$TOKEN\` unrecognized. Continue? [y/N] "
+                    $RESPONSE = Read-Host -Prompt "Token '$TOKEN' unrecognized. Continue? [y/N] "
                     If (!($RESPONSE  -match "^([yY][eE][sS]|[yY])$")) {
                         Write-Output "Terminating."
                         Exit 1
                     }
                     break
+                }
+            }
+
+            If ($ARGLIST -ne $null) {
+                Write-Output "Licensing..."
+
+                $LICENSER = (Start-Process C:\Prizm\jre6\jre6-windows-x86-64\bin\java -ArgumentList $ARGLIST -PassThru)
+                $LICENSER.WaitForExit()
+
+                If ($LICENSER.ExitCode -ne 0)
+                {
+                    Write-Output "Licensing failed..."
+                    Write-Output "Terminating."
+                    Exit 1
+                }
+                Else {
+                    Write-Output "Licensing complete."
+                    $loop = $false
                 }
             }
         }
