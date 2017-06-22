@@ -149,11 +149,8 @@ function install_rpm() {
 # ./pdutil.sh remove
 function remove() {
 	if [[ -d "/usr/share/prizm" ]]; then
-		# Flush stdin buffer
-		read -rt 1
-		
 		# Prompt for confirmation
-		read -rp "Prior installation detected. Remove? [y/N] " RESPONSE
+		read -rp "Prior installation detected. Remove? [y/N] " RESPONSE < /dev/tty
 		if [[ ! "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
 			echo "Terminating." && exit 1
 		fi
@@ -222,11 +219,8 @@ function license() {
 			echo "  5.) I do not want to license my product at this time."
 			echo ""
 
-			# Flush stdin buffer
-			read -rt 1
-			
 			RESPONSE="1"
-			read -rp "Select an option (1-5) [1]: " RESPONSE
+			read -rp "Select an option (1-5) [1]: " RESPONSE < /dev/tty
 			case "$RESPONSE" in
 			"1")
 				read -rp "Solution name: " SOLUTION_NAME
