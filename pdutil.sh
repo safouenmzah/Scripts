@@ -219,6 +219,9 @@ function license() {
 			echo "  5.) I do not want to license my product at this time."
 			echo ""
 
+			# Flush stdin buffer
+			read -rt 0
+			
 			RESPONSE="1"
 			read -rp "Select an option (1-5) [1]: " RESPONSE
 			case "$RESPONSE" in
@@ -227,6 +230,7 @@ function license() {
 				read -rp "OEM key: " OEM_KEY
 
 				echo "Licensing..."
+				echo ""
 				if [[ ! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar /usr/share/prizm/plu/plu.jar deploy write "$SOLUTION_NAME" "$OEM_KEY")" ]]; then
 					echo "Licensing failed. Terminating." && exit 1
 				fi
@@ -237,6 +241,7 @@ function license() {
 				read -rp "Access key: " ACCESS_KEY
 
 				echo "Licensing..."
+				echo ""
 				if [[ ! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar /usr/share/prizm/plu/plu.jar deploy get "$CONFIG_FILE" "$SOLUTION_NAME" "$ACCESS_KEY")" ]]; then
 					echo "Licensing failed. Terminating." && exit 1
 				fi
