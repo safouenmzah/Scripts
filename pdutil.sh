@@ -9,7 +9,7 @@ function install() {
 	download
 
 	echo "Extracting archives..."
-	if [[ ! "$(find . -name "*.tar.gz" -exec tar -xzvf {} \;)" ]]; then 
+	if [[ ! "$(find . -name "*.tar.gz" -exec tar -xzvf {} \;)" ]]; then
 		echo "Extraction failed. Terminating." && exit 1
 	fi
 
@@ -223,8 +223,8 @@ function license() {
 			read -rp "Select an option (1-5) [1]: " RESPONSE < /dev/tty
 			case "$RESPONSE" in
 			"1")
-				read -rp "Solution name: " SOLUTION_NAME
-				read -rp "OEM key: " OEM_KEY
+				read -rp "Solution name: " SOLUTION_NAME < /dev/tty
+				read -rp "OEM key: " OEM_KEY < /dev/tty
 
 				echo "Licensing..."
 				echo ""
@@ -233,9 +233,9 @@ function license() {
 				fi
 				;;
 			"2")
-				read -rp "Solution name: " SOLUTION_NAME
-				read -rp "Configuration file path (relative to $PWD): " CONFIG_FILE
-				read -rp "Access key: " ACCESS_KEY
+				read -rp "Solution name: " SOLUTION_NAME < /dev/tty
+				read -rp "Configuration file path (relative to $PWD): " CONFIG_FILE < /dev/tty
+				read -rp "Access key: " ACCESS_KEY < /dev/tty
 
 				echo "Licensing..."
 				echo ""
@@ -260,7 +260,7 @@ function license() {
 				echo ""
 				;;
 			"4")
-				read -rp "Email address: " EMAIL
+				read -rp "Email address: " EMAIL < /dev/tty
 
 				if [[ ! "$(/usr/share/prizm/java/jre6-linux-x86-64/bin/java -jar /usr/share/prizm/plu/plu.jar eval get "$EMAIL")" ]]; then
 					echo "Licensing failed. Terminating." && exit 1
@@ -270,7 +270,7 @@ function license() {
 				echo "Terminating." && exit 1
 				;;
 			*)
-				read -rp "Token \`$TOKEN\` unrecognized. Continue? [y/N] " RESPONSE
+				read -rp "Token \`$TOKEN\` unrecognized. Continue? [y/N] " RESPONSE < /dev/tty
 				if [[ ! "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
 					echo "Terminating."
 				fi
@@ -362,7 +362,7 @@ function main() {
 				EXCLUDE_SERVER=true
 				;;
 			*)
-				read -rp "Token \`$TOKEN\` unrecognized. Continue? [y/N] " RESPONSE
+				read -rp "Token \`$TOKEN\` unrecognized. Continue? [y/N] " RESPONSE < /dev/tty
 				if [[ ! "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
 					echo "Terminating." && exit 1
 				fi
@@ -384,7 +384,7 @@ function main() {
 				EXCLUDE_SERVER=true
 				;;
 			*)
-				read -rp "Token \`$TOKEN\` unrecognized. Continue? [y/N] " RESPONSE
+				read -rp "Token \`$TOKEN\` unrecognized. Continue? [y/N] " RESPONSE < /dev/tty
 				if [[ ! "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
 					echo "Terminating." && exit 1
 				fi
