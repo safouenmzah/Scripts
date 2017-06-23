@@ -267,7 +267,7 @@ function license() {
 				fi
 				;;
 			"5")
-				echo "Terminating." && exit 1
+				echo "Terminating."
 				;;
 			*)
 				read -rp "Token \`$TOKEN\` unrecognized. Continue? [y/N] " RESPONSE < /dev/tty
