@@ -272,7 +272,7 @@ function license() {
 			*)
 				read -rp "Token \`$TOKEN\` unrecognized. Continue? [y/N] " RESPONSE
 				if [[ ! "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
-					echo "Terminating." && exit 1
+					echo "Terminating."
 				fi
 			esac
 		done
@@ -285,7 +285,7 @@ function license() {
 # ./pdutil.sh clearlogs
 function clearlogs() {
 	# Prompt for confirmation
-	read -rp "Clear logs? [y/N] " RESPONSE
+	read -rp "Clear logs? [y/N] " RESPONSE < /dev/tty
 	if [[ ! "$RESPONSE"  =~ ^([yY][eE][sS]|[yY])$ ]]; then
 		echo "Terminating." && exit 1
 	fi
