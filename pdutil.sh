@@ -45,6 +45,9 @@ function install() {
 }
 
 function install_deb() {
+	# Update apt for fresh DEB installations
+	apt-get update &> /dev/null
+
 	echo "Resolving dependencies..."
 	if [[ ! "$EXCLUDE_SERVER" == true ]]; then
 		dpkg --force-depends -i ./*server*/*.deb
