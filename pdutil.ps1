@@ -132,29 +132,56 @@ Function Install {
 
 # .\pdutil.ps1 Remove
 Function Remove {
-    If (Test-Path "C:\Prizm") {
-        # Prompt for confirmation
-        $RESPONSE = Read-Host -Prompt "Prior installation detected. Remove? [y/N] "
-        If (!($RESPONSE  -match "^([yY][eE][sS]|[yY])$")) {
+    
+    # Check for a client installation
+    $CLIENT = (Get-ChildItem HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall | Where-Object {$_.GetValue("DisplayName") -eq "PrizmDoc Client"})
+    # Check for a server installation
+    $SERVER = (Get-ChildItem HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall | Where-Object {$_.GetValue("DisplayName") -eq "PrizmDoc Server"})
+
+    If ($CLIENT -or $SERVER) {
+        $RESPONSE = Read-Host -Prompt "Installation detected. Remove? [y/N] "
+        If (!($RESPONSE -match "^([yY][eE][sS]|[yY])$")) {
             Write-Output "Terminating."
-            Exit 1
+            Return
         }
 
-        Write-Output "Stopping services..."
-        Stop-Service Prizm
+        If ($CLIENT -ne $null) {
+            Write-Output "Uninstalling client..."
 
-        Write-Output "Stopping PAS..."
-        Stop-Service PrizmApplicationServices
+            $CMD = ($CLIENT.GetValue("UninstallString") | ConvertFrom-String -Delimiter " /").P1.Trim("`" ")
+            $ARGLIST = "-s -u -l client-uninstall.log"
+            $CLIENT_UNINS = (Start-Process $CMD -ArgumentList $ARGLIST -PassThru)
+            $CLIENT_UNINS.WaitForExit()
 
-        Write-Output "Stopping samples..."
-        Stop-Service PrizmDemo
+            If ($CLIENT_UNINS.ExitCode -ne 0) {
+                Write-Output "Uninstallation failed for client."
+            }
+        }
 
-        Write-Output "Removing remaining files..."
-        Remove-Item -Recurse -Force "C:\Prizm"
+        If ($SERVER -ne $null) {
+            Write-Output "Uninstalling server..."
 
-        Write-Output "Successfully removed."
-    } Else {
-        Write-Output "No prior installation detected. Terminating."
+            $CMD = ($SERVER.GetValue("UninstallString") | ConvertFrom-String -Delimiter " /").P1.Trim("`" ")
+            $ARGLIST = "-s -u -l server-uninstall.log"
+            $SERVER_UNINS = (Start-Process $CMD -ArgumentList $ARGLIST -PassThru)
+            $SERVER_UNINS.WaitForExit()
+
+            If ($SERVER_UNINS.ExitCode -ne 0) {
+                Write-Output "Uninstallation failed for server."
+            }
+        }
+
+        If ($CLIENT_UNINS.ExitCode + $SERVER_UNINS.ExitCode -eq 0) {
+            Write-Output "Cleaning up..."
+
+            Remove-Item -Recurse -Force C:\Prizm
+            Remove-Item -Recurse -Force C:\ProgramData\Accusoft\Prizm
+        }
+
+        Write-Output "PrizmDoc Removal complete."
+    }
+    Else {
+        Write-Output "No installation detected..."
     }
 }
 
@@ -309,7 +336,6 @@ Function PrintHelp {
     Write-Output "Options:"
     Write-Output "  -IncludePHP     Include PHP Samples"
     Write-Output "  -IncludeJSP     Include JSP Samples"
-    Write-Output "  -IncludeNET     Include .NET Framework Samples"
     Write-Output "  -ExcludePAS     Exclude PAS"
     Write-Output "  -ExcludeServer  Exclude PrizmDoc Server"
 }
