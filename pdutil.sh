@@ -23,7 +23,7 @@ function install() {
 	echo "Successfully installed."
 	if [[ ! "$EXCLUDE_PAS" == true ]]; then
 		# License
-		license
+		#license
 
 		echo "Restarting PAS..."
 		/usr/share/prizm/pas/pm2/pas.sh restart
