@@ -125,7 +125,7 @@ function install_rpm() {
 			echo "Installing php..."
 			yum install -y php
 
-			sed -i "\$a\nAlias /pccis_sample /usr/share/prizm/Samples/php\n<Directory /usr/share/prizm/Samples/php>\n\tAllowOverride All\n\tRequire all granted\n</Directory>" /etc/httpd/conf.d/php.conf
+			sed -i "\$aAlias /pccis_sample /usr/share/prizm/Samples/php\n<Directory /usr/share/prizm/Samples/php>\n\tAllowOverride All\n\tRequire all granted\n</Directory>" /etc/httpd/conf.d/php.conf
 			
 			echo "Restarting apache..."
 			systemctl restart httpd.service
