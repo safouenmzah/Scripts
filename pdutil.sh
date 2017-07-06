@@ -12,7 +12,11 @@ function install() {
 	if [[ ! "$(find . -name "*.tar.gz" -exec tar -xzvf {} \;)" ]]; then
 		echo "Extraction failed. Terminating." && exit 1
 	fi
-
+	
+	export LC_ALL="en_US.UTF-8"
+	locale-gen
+	#set locale.  See http://help.accusoft.com/PrizmDoc/v12.3/HTML/webframe.html#Linux_Installation.html
+	
 	# Install
 	if [[ $DEB_BASED == true ]]; then
 		install_deb
