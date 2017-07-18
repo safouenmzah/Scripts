@@ -16,7 +16,7 @@ Function Install {
 
     # Chocolatey
     If (!(Test-Path "C:\ProgramData\Chocolatey")) {
-        Write-Output "Chocolatey not found."
+        Write-Output "Chocolatey not found. Terminating."
         Exit 1
     }
 
