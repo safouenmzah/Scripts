@@ -12,7 +12,11 @@ function install() {
 	if [[ ! "$(find . -name "*.tar.gz" -exec tar -xzvf {} \;)" ]]; then
 		echo "Extraction failed. Terminating." && exit 1
 	fi
-
+	
+	export LC_ALL="en_US.UTF-8"
+	locale-gen
+	#set locale.  See http://help.accusoft.com/PrizmDoc/v12.3/HTML/webframe.html#Linux_Installation.html
+	
 	# Install
 	if [[ $DEB_BASED == true ]]; then
 		install_deb
@@ -23,7 +27,7 @@ function install() {
 	echo "Successfully installed."
 	if [[ ! "$EXCLUDE_PAS" == true ]]; then
 		# License
-		license
+		#license
 
 		echo "Restarting PAS..."
 		/usr/share/prizm/pas/pm2/pas.sh restart
@@ -45,6 +49,9 @@ function install() {
 }
 
 function install_deb() {
+	# Update apt for fresh DEB installations
+	apt-get update &> /dev/null
+
 	echo "Resolving dependencies..."
 	if [[ ! "$EXCLUDE_SERVER" == true ]]; then
 		dpkg --force-depends -i ./*server*/*.deb
@@ -122,7 +129,7 @@ function install_rpm() {
 			echo "Installing php..."
 			yum install -y php
 
-			sed -i "\$a\nAlias /pccis_sample /usr/share/prizm/Samples/php\n<Directory /usr/share/prizm/Samples/php>\n\tAllowOverride All\n\tRequire all granted\n</Directory>" /etc/httpd/conf.d/php.conf
+			sed -i "\$aAlias /pccis_sample /usr/share/prizm/Samples/php\n<Directory /usr/share/prizm/Samples/php>\n\tAllowOverride All\n\tRequire all granted\n</Directory>" /etc/httpd/conf.d/php.conf
 			
 			echo "Restarting apache..."
 			systemctl restart httpd.service
